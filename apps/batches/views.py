@@ -1,8 +1,9 @@
 import csv
+import os
 from datetime import datetime
 from django.conf import settings
 from django.core.files.base import ContentFile
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -266,4 +267,32 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
             writer.writerow([cert.recipient_name, cert.recipient_email, cert.error_message, cert.created_at])
             
         return response
+
+    @action(detail=True, methods=["get"], url_path="download-zip")
+    def download_zip(self, request, pk=None):
+        batch = self.get_object()
+        
+        if batch.status not in ["completed", "partially_completed"]:
+            return Response({"detail": "No certificates generated yet."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from services.zip_builder import ZipBuilder
+        zip_path = ZipBuilder.build_certificates_zip(batch)
+        
+        if not zip_path:
+            return Response({"detail": "No successful certificates found."}, status=status.HTTP_404_NOT_FOUND)
+            
+        return FileResponse(open(zip_path, 'rb'), as_attachment=True, filename=f"{batch.name}_certificates.zip")
+
+    @action(detail=True, methods=["get"], url_path="download-original")
+    def download_original(self, request, pk=None):
+        batch = self.get_object()
+        if not batch.participant_file:
+            return Response({"detail": "No file uploaded."}, status=status.HTTP_404_NOT_FOUND)
+            
+        return FileResponse(
+            batch.participant_file.open('rb'), 
+            as_attachment=True, 
+            filename=os.path.basename(batch.participant_file.name)
+        )
+
 
