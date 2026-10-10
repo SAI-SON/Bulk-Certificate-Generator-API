@@ -38,7 +38,6 @@ class Certificate(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["certificate_id"]),
             models.Index(fields=["status"]),
         ]
 

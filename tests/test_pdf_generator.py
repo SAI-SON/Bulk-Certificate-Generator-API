@@ -6,6 +6,7 @@ from services.pdf_generator import PDFGenerator
 from services.certificate_id import generate_certificate_id
 
 
+@pytest.mark.django_db
 def test_generate_certificate_id():
     cert_id = generate_certificate_id()
     assert cert_id.startswith(settings.CERTIFICATE_ID_PREFIX)
@@ -15,6 +16,7 @@ def test_generate_certificate_id():
     assert len(parts[2]) == 6
 
 
+@pytest.mark.django_db
 def test_pdf_generator(tmp_path):
     # 1. Create a dummy image
     img_path = tmp_path / "template.png"
@@ -39,4 +41,5 @@ def test_pdf_generator(tmp_path):
     assert buffer is not None
     assert buffer.getvalue().startswith(b"%PDF-")
     assert cert_id is not None
-    assert participant["certificate_id"] == cert_id
+    # The generator no longer mutates the caller's dict
+    assert "certificate_id" not in participant

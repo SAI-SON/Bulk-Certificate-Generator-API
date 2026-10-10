@@ -1,50 +1,33 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.so
 *.egg-info/
+*.egg
 dist/
 build/
-eggs/
-*.egg
+*.whl
 
 # Virtual environment
 venv/
-env/
 .venv/
-.env
 
 # Django
-*.sqlite3
 db.sqlite3
+*.log
 media/
-staticfiles/
-static_collected/
+
+# Environment
+.env
 
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
-*~
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-
 # Docker
-.docker/
-
-# Celery
-celerybeat-schedule
-celerybeat.pid
-
-# Logs
-*.log
-logs/
+docker-compose.override.yml

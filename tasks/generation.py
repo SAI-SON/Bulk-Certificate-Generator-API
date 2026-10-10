@@ -1,11 +1,13 @@
 import logging
-from datetime import datetime
+
 from celery import shared_task
 from django.core.files.base import ContentFile
 from django.db import transaction, models
+from django.utils import timezone
 
 from apps.batches.models import CertificateBatch
 from apps.certificates.models import Certificate
+from services.certificate_id import generate_certificate_id
 from services.file_parser import ParticipantFileParser
 from services.pdf_generator import PDFGenerator, PDFGenerationError
 
@@ -27,9 +29,12 @@ def generate_certificates_task(self, batch_id):
         logger.warning(f"Batch {batch_id} is in status {batch.status}, skipping execution.")
         return "Not queued"
 
+    # Delete old failed certificates before retrying so we don't accumulate duplicates
+    batch.certificates.filter(status="failed").delete()
+
     # Set status to processing
     batch.status = "processing"
-    batch.started_at = datetime.now()
+    batch.started_at = timezone.now()
     batch.save(update_fields=["status", "started_at"])
 
     try:
@@ -86,6 +91,7 @@ def generate_certificates_task(self, batch_id):
                     batch=batch,
                     recipient_name=name,
                     recipient_email=email,
+                    certificate_id=generate_certificate_id(),
                     status="failed",
                     error_message=str(e)
                 )
@@ -99,6 +105,7 @@ def generate_certificates_task(self, batch_id):
                     batch=batch,
                     recipient_name=name,
                     recipient_email=email,
+                    certificate_id=generate_certificate_id(),
                     status="failed",
                     error_message=f"System error: {str(e)}"
                 )
@@ -109,7 +116,7 @@ def generate_certificates_task(self, batch_id):
 
         # Refresh from db to get accurate counts
         batch.refresh_from_db()
-        batch.completed_at = datetime.now()
+        batch.completed_at = timezone.now()
         batch.status = "completed" if batch.failed_records == 0 else "partially_completed"
         batch.save(update_fields=["completed_at", "status"])
 

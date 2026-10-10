@@ -1,0 +1,107 @@
+# =============================================================================
+# Bulk Certificate Generator API - Docker Compose
+# Full stack: Django + Celery Worker + Redis + PostgreSQL
+# =============================================================================
+
+services:
+  # ---------- PostgreSQL ----------
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-certgen}
+      POSTGRES_USER: ${DB_USER:-certgen}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-certgen_secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-certgen}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------- Redis ----------
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------- Django API ----------
+  web:
+    build: .
+    restart: unless-stopped
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DATABASE_URL=postgres://${DB_USER:-certgen}:${DB_PASSWORD:-certgen_secret}@db:5432/${DB_NAME:-certgen}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
+      - DEBUG=False
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+      - font_data:/app/fonts
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "
+        python manage.py migrate --noinput &&
+        gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120
+      "
+
+  # ---------- Celery Worker ----------
+  celery_worker:
+    build: .
+    restart: unless-stopped
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DATABASE_URL=postgres://${DB_USER:-certgen}:${DB_PASSWORD:-certgen_secret}@db:5432/${DB_NAME:-certgen}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+    volumes:
+      - media_data:/app/media
+      - font_data:/app/fonts
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A config worker -l INFO --concurrency=2
+
+  # ---------- Celery Beat (Optional Scheduler) ----------
+  celery_beat:
+    build: .
+    restart: unless-stopped
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DATABASE_URL=postgres://${DB_USER:-certgen}:${DB_PASSWORD:-certgen_secret}@db:5432/${DB_NAME:-certgen}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A config beat -l INFO
+
+volumes:
+  postgres_data:
+  media_data:
+  static_data:
+  font_data:

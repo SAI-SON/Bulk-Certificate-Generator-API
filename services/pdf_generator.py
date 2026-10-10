@@ -51,6 +51,10 @@ class PDFGenerator:
             tuple: (BytesIO buffer containing the PDF, generated certificate ID)
         """
         try:
+            # Work on a copy so we don't mutate the caller's data (e.g. leaking
+            # certificate_id between rows when called in a loop).
+            data = dict(participant_data)
+
             # 1. Determine image dimensions
             with Image.open(template_path) as img:
                 width, height = img.size
@@ -66,15 +70,15 @@ class PDFGenerator:
             
             # 4. Generate Certificate ID (and inject into data)
             cert_id = generate_certificate_id()
-            participant_data["certificate_id"] = cert_id
+            data["certificate_id"] = cert_id
             
             # Ensure completion_date has a fallback if not provided
-            if not participant_data.get("completion_date"):
-                participant_data["completion_date"] = datetime.now().strftime("%Y-%m-%d")
+            if not data.get("completion_date"):
+                data["completion_date"] = datetime.now().strftime("%Y-%m-%d")
 
             # 5. Overlay Text based on configuration
             for field, config in field_config.items():
-                text = participant_data.get(field)
+                text = data.get(field)
                 if not text:
                     continue
                     

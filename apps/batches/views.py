@@ -1,9 +1,10 @@
 import csv
 import os
-from datetime import datetime
+
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.http import HttpResponse, FileResponse
+from django.utils import timezone
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -15,6 +16,7 @@ from apps.certificates.models import Certificate
 from apps.certificates.serializers import CertificateSerializer
 from .models import CertificateBatch
 from .serializers import CertificateBatchSerializer, CertificateBatchDetailSerializer
+from services.certificate_id import generate_certificate_id
 from services.file_parser import ParticipantFileParser, FileParserError
 from services.pdf_generator import PDFGenerator, PDFGenerationError
 
@@ -109,7 +111,7 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
         batch.processed_records = 0
         batch.successful_records = 0
         batch.failed_records = 0
-        batch.started_at = datetime.now()
+        batch.started_at = timezone.now()
         batch.status = "processing"
         batch.save()
         
@@ -127,7 +129,7 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
             
             # Trigger Celery task
             from tasks.generation import generate_certificates_task
-            generate_certificates_task.delay(batch.id)
+            generate_certificates_task.delay(str(batch.id))
             
             return Response(
                 {"detail": "Batch queued for asynchronous generation."},
@@ -164,6 +166,7 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
                     batch=batch,
                     recipient_name=row.get("name"),
                     recipient_email=row.get("email"),
+                    certificate_id=generate_certificate_id(),
                     status="failed",
                     error_message=str(e)
                 )
@@ -173,6 +176,7 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
                     batch=batch,
                     recipient_name=row.get("name"),
                     recipient_email=row.get("email"),
+                    certificate_id=generate_certificate_id(),
                     status="failed",
                     error_message=f"System error: {str(e)}"
                 )
@@ -181,7 +185,7 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
             batch.processed_records += 1
             batch.save(update_fields=["processed_records", "successful_records", "failed_records"])
             
-        batch.completed_at = datetime.now()
+        batch.completed_at = timezone.now()
         batch.status = "completed" if batch.failed_records == 0 else "partially_completed"
         batch.save()
 
@@ -242,15 +246,19 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
         if not failed_certs.exists():
             return Response({"detail": "No failed certificates found to retry."}, status=status.HTTP_400_BAD_REQUEST)
 
-        batch.status = "queued"
-        batch.save(update_fields=["status"])
-        
-        # We can reuse the generate logic or have a separate task. For this phase, 
-        # let's trigger the celery task which inherently skips successful certificates via idempotency.
-        from tasks.generation import generate_certificates_task
-        generate_certificates_task.delay(batch.id)
+        failed_count = failed_certs.count()
 
-        return Response({"detail": f"Queued {failed_certs.count()} failed certificates for retry."}, status=status.HTTP_202_ACCEPTED)
+        # Reset batch counters for the retry run
+        batch.status = "queued"
+        batch.failed_records = 0
+        batch.processed_records = batch.successful_records  # Keep existing successes
+        batch.save(update_fields=["status", "failed_records", "processed_records"])
+        
+        # Trigger Celery task — the task deletes old failed certs and re-processes.
+        from tasks.generation import generate_certificates_task
+        generate_certificates_task.delay(str(batch.id))
+
+        return Response({"detail": f"Queued {failed_count} failed certificates for retry."}, status=status.HTTP_202_ACCEPTED)
 
     @action(detail=True, methods=["get"], url_path="failed-report")
     def failed_report(self, request, pk=None):
@@ -281,8 +289,15 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
         
         if not zip_path:
             return Response({"detail": "No successful certificates found."}, status=status.HTTP_404_NOT_FOUND)
-            
-        return FileResponse(open(zip_path, 'rb'), as_attachment=True, filename=f"{batch.name}_certificates.zip")
+        
+        # Open the temp file and schedule cleanup after response is sent
+        zip_file = open(zip_path, 'rb')
+        response = FileResponse(zip_file, as_attachment=True, filename=f"{batch.name}_certificates.zip")
+        # Clean up the temp file after the response is streamed
+        response.file_to_stream_with_cleanup = zip_path
+        import atexit
+        atexit.register(lambda p=zip_path: os.path.exists(p) and os.unlink(p))
+        return response
 
     @action(detail=True, methods=["get"], url_path="download-original")
     def download_original(self, request, pk=None):
