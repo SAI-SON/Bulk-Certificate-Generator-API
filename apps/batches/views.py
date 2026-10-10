@@ -12,6 +12,7 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from apps.accounts.permissions import IsOwner
 from apps.certificates.models import Certificate
+from apps.certificates.serializers import CertificateSerializer
 from .models import CertificateBatch
 from .serializers import CertificateBatchSerializer, CertificateBatchDetailSerializer
 from services.file_parser import ParticipantFileParser, FileParserError
