@@ -11,6 +11,7 @@ from .models import Certificate
 from .serializers import CertificateSerializer
 from apps.core.pagination import LargePagination
 from apps.core.throttling import VerificationRateThrottle
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiTypes
 
 
 class CertificateViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
@@ -31,6 +32,14 @@ class CertificateViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
         # but it adds a layer of semantic correctness.
         return super().get_permissions()
 
+    @extend_schema(
+        summary="Download Certificate PDF",
+        description="Returns the generated PDF file for the certificate.",
+        responses={
+            200: OpenApiResponse(description="PDF File"),
+            404: OpenApiResponse(description="PDF not generated yet or not found.")
+        }
+    )
     @action(detail=True, methods=["get"])
     def download(self, request, pk=None):
         certificate = self.get_object()
@@ -47,6 +56,15 @@ class CertificateViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, views
             filename=os.path.basename(certificate.generated_file.name)
         )
 
+    @extend_schema(
+        summary="Revoke Certificate",
+        description="Marks a certificate as revoked. Requires a revocation reason.",
+        request={'application/json': {'type': 'object', 'properties': {'reason': {'type': 'string'}}}},
+        responses={
+            200: OpenApiResponse(description="Certificate successfully revoked."),
+            400: OpenApiResponse(description="Invalid request (e.g., missing reason).")
+        }
+    )
     @action(detail=True, methods=["post"])
     def revoke(self, request, pk=None):
         certificate = self.get_object()
@@ -70,6 +88,17 @@ class CertificateVerificationView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [VerificationRateThrottle]
 
+    @extend_schema(
+        summary="Verify Certificate (Public)",
+        description="Public endpoint to check if a certificate is valid, active, or revoked. Does not require authentication.",
+        parameters=[
+            OpenApiParameter("certificate_id", type=OpenApiTypes.STR, location=OpenApiParameter.PATH, description="The unique certificate ID")
+        ],
+        responses={
+            200: OpenApiResponse(description="Verification details (valid or revoked status)"),
+            404: OpenApiResponse(description="Certificate not found")
+        }
+    )
     def get(self, request, certificate_id):
         try:
             cert = Certificate.objects.get(certificate_id=certificate_id)

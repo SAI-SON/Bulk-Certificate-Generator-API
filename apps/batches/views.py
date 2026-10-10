@@ -19,6 +19,7 @@ from .serializers import CertificateBatchSerializer, CertificateBatchDetailSeria
 from services.certificate_id import generate_certificate_id
 from services.file_parser import ParticipantFileParser, FileParserError
 from services.pdf_generator import PDFGenerator, PDFGenerationError
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiTypes
 
 
 class CertificateBatchViewSet(viewsets.ModelViewSet):
@@ -36,6 +37,14 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
             return CertificateBatchDetailSerializer
         return CertificateBatchSerializer
 
+    @extend_schema(
+        summary="Validate Batch CSV/XLSX File",
+        description="Parses the uploaded participant file, validating headers, email formats, and duplicates.",
+        responses={
+            200: OpenApiResponse(description="Validation passed (fully or partially). Returns counts of valid and invalid rows."),
+            400: OpenApiResponse(description="Validation failed completely (e.g. invalid file format).")
+        }
+    )
     @action(detail=True, methods=["post"])
     def validate(self, request, pk=None):
         batch = self.get_object()
@@ -83,6 +92,15 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
             batch.save()
             return Response({"detail": "Failed to process file."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @extend_schema(
+        summary="Start Certificate Generation",
+        description="Generates certificates for the validated batch. Processes synchronously for small batches, or queues a Celery task for large batches.",
+        responses={
+            200: OpenApiResponse(description="Batch generation completed synchronously."),
+            202: OpenApiResponse(description="Batch queued for asynchronous generation via Celery."),
+            400: OpenApiResponse(description="Batch is not in a valid state to generate.")
+        }
+    )
     @action(detail=True, methods=["post"])
     def generate(self, request, pk=None):
         """
@@ -189,6 +207,11 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
         batch.status = "completed" if batch.failed_records == 0 else "partially_completed"
         batch.save()
 
+    @extend_schema(
+        summary="Get Batch Status",
+        description="Returns the real-time processing status and progress percentage of a batch.",
+        responses={200: OpenApiResponse(description="Current status payload")}
+    )
     @action(detail=True, methods=["get"])
     def status(self, request, pk=None):
         batch = self.get_object()
@@ -210,6 +233,11 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
             "errors": batch.error_summary
         })
 
+    @extend_schema(
+        summary="List Batch Certificates",
+        description="Paginated list of all certificates (generated or failed) belonging to this batch.",
+        responses={200: CertificateSerializer(many=True)}
+    )
     @action(detail=True, methods=["get"])
     def certificates(self, request, pk=None):
         """
@@ -226,6 +254,14 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
         serializer = CertificateSerializer(queryset, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        summary="Cancel Queued Batch",
+        description="Cancels a batch that is waiting in the queue to be processed.",
+        responses={
+            200: OpenApiResponse(description="Batch cancelled successfully."),
+            400: OpenApiResponse(description="Batch is not queued and cannot be cancelled.")
+        }
+    )
     @action(detail=True, methods=["post"])
     def cancel(self, request, pk=None):
         batch = self.get_object()
@@ -236,6 +272,14 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
             return Response({"detail": "Batch cancelled successfully."})
         return Response({"detail": f"Cannot cancel a batch in '{batch.status}' status."}, status=status.HTTP_400_BAD_REQUEST)
 
+    @extend_schema(
+        summary="Retry Failed Certificates",
+        description="Queues a task to retry generation only for the certificates that failed in a previous run.",
+        responses={
+            202: OpenApiResponse(description="Retry job queued successfully."),
+            400: OpenApiResponse(description="No failed certificates or batch is not in a completed state.")
+        }
+    )
     @action(detail=True, methods=["post"])
     def retry_failed(self, request, pk=None):
         batch = self.get_object()
@@ -260,6 +304,11 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
 
         return Response({"detail": f"Queued {failed_count} failed certificates for retry."}, status=status.HTTP_202_ACCEPTED)
 
+    @extend_schema(
+        summary="Download Failed Report",
+        description="Downloads a CSV report of all failed certificates, including error messages.",
+        responses={200: OpenApiResponse(description="CSV File Stream")}
+    )
     @action(detail=True, methods=["get"], url_path="failed-report")
     def failed_report(self, request, pk=None):
         batch = self.get_object()
@@ -277,6 +326,15 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
             
         return response
 
+    @extend_schema(
+        summary="Download Certificates ZIP",
+        description="Generates and streams a ZIP file containing all successfully generated PDFs for this batch.",
+        responses={
+            200: OpenApiResponse(description="ZIP File Stream"),
+            400: OpenApiResponse(description="Batch not completed."),
+            404: OpenApiResponse(description="No successful certificates found.")
+        }
+    )
     @action(detail=True, methods=["get"], url_path="download-zip")
     def download_zip(self, request, pk=None):
         batch = self.get_object()
@@ -299,6 +357,14 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
         atexit.register(lambda p=zip_path: os.path.exists(p) and os.unlink(p))
         return response
 
+    @extend_schema(
+        summary="Download Original Uploaded File",
+        description="Downloads the raw CSV/XLSX file originally uploaded by the user.",
+        responses={
+            200: OpenApiResponse(description="Raw file stream"),
+            404: OpenApiResponse(description="File not found on server.")
+        }
+    )
     @action(detail=True, methods=["get"], url_path="download-original")
     def download_original(self, request, pk=None):
         batch = self.get_object()
