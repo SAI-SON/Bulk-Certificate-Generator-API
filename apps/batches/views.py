@@ -28,7 +28,13 @@ class CertificateBatchViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [IsAuthenticated, IsOwner]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
-    
+    def initial(self, request, *args, **kwargs):
+        # Support token authentication via query parameter for direct browser downloads
+        token = request.query_params.get("token")
+        if token and "HTTP_AUTHORIZATION" not in request.META:
+            request.META["HTTP_AUTHORIZATION"] = f"Token {token}"
+        super().initial(request, *args, **kwargs)
+
     def get_queryset(self):
         return CertificateBatch.objects.filter(owner=self.request.user)
 

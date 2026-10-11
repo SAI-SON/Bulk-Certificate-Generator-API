@@ -6,17 +6,33 @@ Uses SQLite and enables debug mode for local development.
 from .base import *  # noqa: F401, F403
 
 DEBUG = True
+ALLOWED_HOSTS = ["*"]
 
 # ──────────────────────────────────────────────────────────────
-# Database — SQLite for local development
+# Database — PostgreSQL or SQLite for local development
 # ──────────────────────────────────────────────────────────────
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",  # noqa: F405
+USE_POSTGRES = env.bool("USE_POSTGRES", default=True)
+
+if USE_POSTGRES and env("DB_NAME", default=None):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("DB_NAME"),
+            "USER": env("DB_USER", default="postgres"),
+            "PASSWORD": env("DB_PASSWORD", default=""),
+            "HOST": env("DB_HOST", default="localhost"),
+            "PORT": env("DB_PORT", default="5432"),
+            "CONN_MAX_AGE": 600,
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",  # noqa: F405
+        }
+    }
 
 # ──────────────────────────────────────────────────────────────
 # Additional renderers for development (Browsable API)

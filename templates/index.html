@@ -1,0 +1,2245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CertGen Studio — Real-Time Bulk Certificate Generator & Verifier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-secondary: #111827;
+      --bg-tertiary: #1f2937;
+      --bg-card: rgba(17, 24, 39, 0.75);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --accent-primary: #6366f1;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-cyan: #06b6d4;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --font-display: 'Outfit', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+      --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 85% 75%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+    header {
+      background: rgba(10, 14, 23, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0.85rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-cyan));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .brand-text h1 {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #fff 30%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text p {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 0.5rem;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 0.3rem;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .nav-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-display);
+      font-size: 0.88rem;
+      font-weight: 500;
+      padding: 0.5rem 1.15rem;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .nav-tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-tab-btn.active {
+      background: var(--accent-primary);
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(99, 102, 241, 0.35);
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .pulse-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 0.35rem 0.85rem;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #34d399;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse-ring 2s infinite cubic-bezier(0.66, 0, 0, 1);
+    }
+
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .user-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: var(--bg-tertiary);
+      padding: 0.35rem 0.85rem;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--border-subtle);
+      font-size: 0.8rem;
+    }
+
+    .user-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ec4899, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.75rem;
+      color: white;
+    }
+
+    main {
+      flex: 1;
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 2rem;
+      width: 100%;
+    }
+
+    .view-panel {
+      display: none;
+      animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .view-panel.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 1.75rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 1rem;
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .card-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+
+    @media (max-width: 992px) {
+      .grid-2, .grid-4 { grid-template-columns: 1fr; }
+      header { flex-direction: column; gap: 1rem; }
+    }
+
+    .metric-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transition: all 0.25s ease;
+    }
+
+    .metric-card:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .metric-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .metric-val {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .form-group { margin-bottom: 1.25rem; }
+
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      color: var(--text-main);
+      font-family: var(--font-body);
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.75rem 1.4rem;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-primary), #4f46e5);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #4f46e5, #4338ca);
+      transform: translateY(-1px);
+    }
+
+    .btn-emerald {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+    }
+
+    .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.78rem; }
+    .btn-lg { padding: 0.95rem 2rem; font-size: 1.05rem; }
+
+    .progress-box {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .progress-title {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 1rem;
+      color: #fff;
+    }
+
+    .progress-pct {
+      font-family: var(--font-mono);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #6366f1, #06b6d4, #10b981);
+      border-radius: var(--radius-full);
+      transition: width 0.4s ease-out;
+      box-shadow: 0 0 16px rgba(6, 182, 212, 0.6);
+    }
+
+    .progress-metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+
+    .p-metric {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      text-align: center;
+    }
+
+    .p-metric-val {
+      font-family: var(--font-mono);
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .p-metric-label {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-top: 0.2rem;
+    }
+
+    .stream-console {
+      background: #06090e;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-sm);
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 1.25rem;
+      line-height: 1.6;
+    }
+
+    .stream-line { display: flex; gap: 0.75rem; color: #94a3b8; }
+    .stream-line .time { color: #475569; }
+    .stream-line.success { color: #34d399; }
+    .stream-line.info { color: #38bdf8; }
+    .stream-line.warn { color: #fbbf24; }
+
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      background: rgba(15, 23, 42, 0.4);
+    }
+
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem; }
+    th {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 0.85rem 1.2rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    td {
+      padding: 0.9rem 1.2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.65rem;
+      border-radius: var(--radius-full);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-processing { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .badge-queued { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-failed { background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+
+    .canvas-container {
+      background: #000;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      max-height: 480px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .canvas-preview-img { max-width: 100%; max-height: 480px; display: block; }
+
+    .studio-canvas-container {
+      position: relative;
+      background: #090d16;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: crosshair;
+      user-select: none;
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6);
+      min-height: 380px;
+    }
+
+    .studio-canvas {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border-radius: 6px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .coords-pill {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-full);
+      padding: 0.35rem 0.85rem;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      pointer-events: none;
+      z-index: 5;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .mode-tab-group {
+      display: flex;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 3px;
+      gap: 4px;
+      margin-bottom: 1.25rem;
+    }
+
+    .mode-tab-btn {
+      flex: 1;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      font-family: var(--font-display);
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .mode-tab-btn.active {
+      background: rgba(99, 102, 241, 0.2);
+      color: #fff;
+      border: 1px solid rgba(99, 102, 241, 0.4);
+    }
+
+    .nudge-pad {
+      display: inline-grid;
+      grid-template-columns: repeat(3, 34px);
+      grid-gap: 4px;
+    }
+
+    .nudge-btn {
+      width: 34px;
+      height: 34px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .nudge-btn:hover {
+      background: rgba(99, 102, 241, 0.25);
+      border-color: rgba(99, 102, 241, 0.5);
+      color: #fff;
+    }
+
+    .align-group {
+      display: inline-flex;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .align-btn {
+      background: rgba(15, 23, 42, 0.6);
+      border: none;
+      padding: 0.5rem 0.9rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .align-btn.active {
+      background: var(--accent-primary);
+      color: #fff;
+    }
+
+    .verified-card {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(6, 182, 212, 0.05) 100%);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      text-align: center;
+      display: none;
+      margin-top: 1.5rem;
+    }
+
+    .verified-icon {
+      width: 64px;
+      height: 64px;
+      background: #10b981;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.25rem;
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.5);
+    }
+
+    #toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      z-index: 999;
+    }
+
+    .toast {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-left: 4px solid var(--accent-primary);
+      padding: 0.85rem 1.25rem;
+      border-radius: var(--radius-sm);
+      color: #fff;
+      font-size: 0.85rem;
+      box-shadow: var(--shadow-lg);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <header>
+    <a href="#" class="brand">
+      <div class="brand-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="6"/>
+          <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>CertGen Studio</h1>
+        <p>Real-Time Engine</p>
+      </div>
+    </a>
+
+    <nav class="nav-tabs">
+      <button class="nav-tab-btn active" onclick="switchTab('dashboard')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-tab-btn" onclick="switchTab('generator')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Real-Time Batch Generator
+      </button>
+      <button class="nav-tab-btn" onclick="switchTab('studio')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 15-6-6-6 6"/><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+        Template Studio
+      </button>
+      <button class="nav-tab-btn" onclick="switchTab('verifier')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+        Public Verifier
+      </button>
+    </nav>
+
+    <div class="header-status">
+      <div class="pulse-pill" title="PostgreSQL + Redis + Celery running">
+        <span class="pulse-dot"></span>
+        <span>Real-Time Engine Active</span>
+      </div>
+      <div class="user-chip" id="user-chip">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <span id="user-display-name">admin</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- VIEW 1: DASHBOARD -->
+    <section id="view-dashboard" class="view-panel active">
+      <div class="grid-4" style="margin-bottom: 1.75rem;">
+        <div class="metric-card">
+          <div class="metric-label">
+            <span>Database Status</span>
+            <span style="color: #34d399;">● Online</span>
+          </div>
+          <div class="metric-val" style="font-size: 1.35rem; color: #38bdf8;">PostgreSQL (demo)</div>
+          <span style="font-size: 0.75rem; color: var(--text-dim);">Port 5432 • All migrations synced</span>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">
+            <span>Async Broker</span>
+            <span style="color: #34d399;">● Connected</span>
+          </div>
+          <div class="metric-val" style="font-size: 1.35rem; color: #a78bfa;">Celery + Redis</div>
+          <span style="font-size: 0.75rem; color: var(--text-dim);">Queue: celery • Pool: solo</span>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">
+            <span>Active Templates</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+          </div>
+          <div class="metric-val" id="stat-template-count">1</div>
+          <span style="font-size: 0.75rem; color: var(--text-dim);">Ready for generation</span>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-label">
+            <span>Certificates Generated</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>
+          </div>
+          <div class="metric-val" id="stat-cert-count" style="color: #34d399;">0</div>
+          <span style="font-size: 0.75rem; color: var(--text-dim);">Issued in PostgreSQL</span>
+        </div>
+      </div>
+
+      <div class="card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%); border-color: rgba(99, 102, 241, 0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h2 style="font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 0.3rem;">Launch New Real-Time Batch</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Generate professional PDF certificates in seconds with live Celery progress updates.</p>
+          </div>
+          <div style="display: flex; gap: 0.75rem;">
+            <button class="btn btn-secondary" onclick="loadSampleBatchAndGenerate()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 15 6 6m-6-6v4.8m0-4.8h4.8"/><path d="M9 19.4v-4.8m0 4.8H4.2m4.8 0L3 15"/></svg>
+              1-Click Demo Generation
+            </button>
+            <button class="btn btn-primary" onclick="switchTab('generator')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Open Batch Generator
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+              Recent Certificate Batches
+            </div>
+            <div class="card-subtitle">Real-time job execution history and download links</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="loadBatchesList()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+            Refresh
+          </button>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Batch Name</th>
+                <th>Status</th>
+                <th>Progress</th>
+                <th>Success / Total</th>
+                <th>Created At</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="batches-table-body">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-dim); padding: 2rem;">Loading batches...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: REAL-TIME BATCH GENERATOR -->
+    <section id="view-generator" class="view-panel">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                Step 1 & 2: Batch Configuration
+              </div>
+              <div class="card-subtitle">Configure template & upload participant data</div>
+            </div>
+          </div>
+
+          <form id="create-batch-form" onsubmit="handleBatchSubmit(event)">
+            <div class="form-group">
+              <label class="form-label">Batch Name</label>
+              <input type="text" class="form-control" id="batch-name-input" placeholder="e.g. AI Certification Workshop Cohort 1" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Select Certificate Template</label>
+              <select class="form-control" id="batch-template-select" onchange="onBatchTemplateSelectChange()" required>
+                <option value="">Loading templates...</option>
+              </select>
+              <div id="batch-template-info-box" style="display: none; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-top: 0.6rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                  <div>
+                    <div style="font-size: 0.8rem; font-weight: 600; color: #a5b4fc; display: flex; align-items: center; gap: 0.4rem;">
+                      <span>🎯</span> Name Placement Status:
+                    </div>
+                    <div id="batch-template-coords-text" style="font-size: 0.78rem; color: #e2e8f0; font-family: var(--font-mono); margin-top: 0.2rem;">
+                      Center (X: 600, Y: 260) • 32px
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="openSelectedTemplateInStudio()">
+                    ✏️ Adjust in Studio
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <label class="form-label" style="margin-bottom: 0;">Participant File (CSV / XLSX)</label>
+                <div style="display: flex; gap: 0.5rem;">
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="downloadSampleCSV()">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                    Sample CSV
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="usePreloadedCSV()">
+                    Preload Sample
+                  </button>
+                </div>
+              </div>
+              <input type="file" class="form-control" id="batch-file-input" accept=".csv,.xlsx">
+              <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.4rem;">
+                Required column: <code>name</code> • Optional: <code>email</code>, <code>course_name</code>, <code>completion_date</code>
+              </p>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+              <button type="submit" class="btn btn-primary btn-lg" id="submit-batch-btn" style="flex: 1;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Validate & Start Generation
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Real-Time Progress Monitor -->
+        <div class="card" id="realtime-monitor-card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Real-Time Execution Tracker
+              </div>
+              <div class="card-subtitle">Live Celery worker status & progress updates</div>
+            </div>
+            <span class="badge badge-queued" id="monitor-badge-status">Idle</span>
+          </div>
+
+          <div class="progress-box">
+            <div class="progress-header">
+              <div class="progress-title" id="monitor-task-title">No Active Batch</div>
+              <div class="progress-pct" id="monitor-percentage">0%</div>
+            </div>
+
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="monitor-progress-fill"></div>
+            </div>
+
+            <div class="progress-metrics">
+              <div class="p-metric">
+                <div class="p-metric-val" id="p-total" style="color: #f8fafc;">0</div>
+                <div class="p-metric-label">Total</div>
+              </div>
+              <div class="p-metric">
+                <div class="p-metric-val" id="p-processed" style="color: #38bdf8;">0</div>
+                <div class="p-metric-label">Processed</div>
+              </div>
+              <div class="p-metric">
+                <div class="p-metric-val" id="p-success" style="color: #34d399;">0</div>
+                <div class="p-metric-label">Success</div>
+              </div>
+              <div class="p-metric">
+                <div class="p-metric-val" id="p-failed" style="color: #fb7185;">0</div>
+                <div class="p-metric-label">Failed</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="batch-completed-actions" style="display: none; margin: 1rem 0;">
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-sm); padding: 1rem; display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <div>
+                  <div style="font-weight: 600; color: #34d399;">Batch Generation Completed!</div>
+                  <div style="font-size: 0.8rem; color: var(--text-muted);">All certificates compiled and ready.</div>
+                </div>
+              </div>
+              <a href="#" class="btn btn-emerald" id="download-zip-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                Download All (ZIP)
+              </a>
+            </div>
+          </div>
+
+          <div class="form-label" style="margin-bottom: 0.35rem;">Real-Time Execution Log Stream</div>
+          <div class="stream-console" id="stream-console">
+            <div class="stream-line info"><span class="time">[System]</span> Awaiting batch trigger...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="generated-certs-card" style="display: none;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Generated Certificates for Current Batch</div>
+            <div class="card-subtitle">Preview individual PDF files or copy certificate IDs</div>
+          </div>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Certificate ID</th>
+                <th>Recipient Name</th>
+                <th>Email</th>
+                <th>Course Name</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="generated-certs-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: TEMPLATE STUDIO -->
+    <section id="view-studio" class="view-panel">
+      <!-- Mode Tabs: Edit Existing vs Upload New -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 style="font-family: var(--font-display); font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🎨</span> Template & Name Position Studio
+          </h2>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">
+            எந்த டெம்ப்ளேட்டாக இருந்தாலும் பெயர் இருக்கும் இடத்தை தானாகவோ அல்லது க்ளிக் செய்தோ தேர்ந்தெடுத்து பெயரை மட்டும் மாற்றலாம்.
+          </p>
+        </div>
+        <div class="mode-tab-group" style="margin-bottom: 0; min-width: 320px;">
+          <button type="button" class="mode-tab-btn active" id="btn-mode-existing" onclick="setStudioMode('existing')">
+            📁 Edit Existing Template
+          </button>
+          <button type="button" class="mode-tab-btn" id="btn-mode-new" onclick="setStudioMode('new')">
+            ➕ Upload New Template
+          </button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- LEFT PANEL: Controls -->
+        <div class="card">
+          <!-- Template Selection or Upload Form -->
+          <div id="studio-existing-picker" class="form-group">
+            <label class="form-label">Active Template to Configure</label>
+            <select class="form-control" id="studio-template-select" onchange="onStudioTemplateSelectChange()">
+              <option value="">Loading templates...</option>
+            </select>
+          </div>
+
+          <div id="studio-new-upload-box" style="display: none; background: rgba(99, 102, 241, 0.05); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1.25rem;">
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label class="form-label">New Template Name</label>
+              <input type="text" class="form-control" id="tmpl-new-name" placeholder="e.g. Workshop Award 2026">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">Upload Template Image (PNG / JPG)</label>
+              <input type="file" class="form-control" id="tmpl-new-file" accept="image/png,image/jpeg" onchange="onStudioNewFileSelected(event)">
+            </div>
+          </div>
+
+          <!-- Smart Quick-Actions -->
+          <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <div style="font-weight: 600; font-size: 0.9rem; color: #a5b4fc; display: flex; align-items: center; gap: 0.4rem;">
+                <span>✨</span> Smart Name Placement
+              </div>
+              <span class="badge badge-success" id="studio-dim-badge">1200 x 800 px</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button type="button" class="btn btn-primary btn-sm" onclick="autoDetectNamePosition()" title="Automatically center name in certificate honorific zone">
+                ✨ Auto-Detect Name Position
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="centerNameHorizontally()" title="Align to horizontal center">
+                🎯 Center Horizontally
+              </button>
+            </div>
+            <p style="font-size: 0.75rem; color: var(--text-dim); margin-top: 0.6rem;">
+              💡 <b>Tip:</b> நீங்கள் வலதுபுறமுள்ள சான்றிதழ் படத்தில் எங்கு க்ளிக் செய்தாலும், பெயர் தானாகவே அந்த இடத்தில் அமையும்!
+            </p>
+          </div>
+
+          <!-- Coordinates & Nudge Pad -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1.25rem;">
+            <div class="form-label" style="margin-bottom: 0.75rem; color: #38bdf8;">📍 Exact Coordinates (Pixels from Top-Left)</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+              <div style="display: flex; gap: 0.75rem;">
+                <div>
+                  <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;">X (Horizontal)</label>
+                  <input type="number" class="form-control" id="studio-coord-x" style="width: 100px; font-family: var(--font-mono);" oninput="onCoordInputChange()">
+                </div>
+                <div>
+                  <label class="form-label" style="font-size: 0.75rem; margin-bottom: 0.2rem;">Y (Vertical)</label>
+                  <input type="number" class="form-control" id="studio-coord-y" style="width: 100px; font-family: var(--font-mono);" oninput="onCoordInputChange()">
+                </div>
+              </div>
+
+              <!-- Micro Nudge Pad -->
+              <div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; text-align: center;">Nudge ±5px</div>
+                <div class="nudge-pad">
+                  <div></div>
+                  <button type="button" class="nudge-btn" onclick="nudgeCoord(0, -5)" title="Up 5px">▲</button>
+                  <div></div>
+                  <button type="button" class="nudge-btn" onclick="nudgeCoord(-5, 0)" title="Left 5px">◀</button>
+                  <button type="button" class="nudge-btn" onclick="centerNameHorizontally()" title="Center" style="color: #38bdf8;">•</button>
+                  <button type="button" class="nudge-btn" onclick="nudgeCoord(5, 0)" title="Right 5px">▶</button>
+                  <div></div>
+                  <button type="button" class="nudge-btn" onclick="nudgeCoord(0, 5)" title="Down 5px">▼</button>
+                  <div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Name Typography & Visual Styling -->
+          <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1.25rem;">
+            <div class="form-label" style="margin-bottom: 0.75rem; color: #a78bfa;">🔤 Name Styling & Erase Settings</div>
+            
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label class="form-label" style="font-size: 0.78rem;">Sample Participant Name to Preview</label>
+              <input type="text" class="form-control" id="studio-sample-name" value="Saison" oninput="renderStudioCanvas()">
+            </div>
+
+            <div class="grid-2" style="margin-bottom: 0.85rem; gap: 0.75rem;">
+              <div>
+                <div style="display: flex; justify-content: space-between;">
+                  <label class="form-label" style="font-size: 0.78rem; margin-bottom: 0.2rem;">Font Size</label>
+                  <span id="studio-fontsize-badge" style="font-size: 0.78rem; font-family: var(--font-mono); color: #38bdf8;">32px</span>
+                </div>
+                <input type="range" min="14" max="72" value="32" class="form-control" id="studio-fontsize-range" style="padding: 0.3rem 0; cursor: pointer;" oninput="onFontSizeChange()">
+              </div>
+
+              <div>
+                <label class="form-label" style="font-size: 0.78rem; margin-bottom: 0.2rem;">Text Color</label>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <input type="color" id="studio-color-picker" value="#1e293b" style="width: 38px; height: 38px; border: none; border-radius: 6px; cursor: pointer; background: transparent;" onchange="onColorChange()">
+                  <input type="text" class="form-control" id="studio-color-hex" value="#1e293b" style="font-family: var(--font-mono); font-size: 0.82rem;" oninput="onColorHexChange()">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0.85rem;">
+              <label class="form-label" style="font-size: 0.78rem; margin-bottom: 0.35rem;">Text Alignment</label>
+              <div class="align-group">
+                <button type="button" class="align-btn" id="align-btn-left" onclick="setTextAlign('left')">Left</button>
+                <button type="button" class="align-btn active" id="align-btn-center" onclick="setTextAlign('center')">Center</button>
+                <button type="button" class="align-btn" id="align-btn-right" onclick="setTextAlign('right')">Right</button>
+              </div>
+            </div>
+
+            <!-- Clear Background Mask (Underline / Dummy text erase) -->
+            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-sm); padding: 0.75rem 0.9rem;">
+              <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; margin-bottom: 0.4rem;">
+                <input type="checkbox" id="studio-clear-bg-checkbox" onchange="onClearBgChange()" checked style="width: 16px; height: 16px; accent-color: var(--accent-emerald);">
+                <span style="font-size: 0.82rem; font-weight: 600; color: #34d399;">Clear/Erase Dummy Text or Line Under Name</span>
+              </label>
+              <p style="font-size: 0.72rem; color: var(--text-dim); margin-left: 1.6rem; margin-bottom: 0.5rem;">
+                டெம்ப்ளேட்டில் ஏற்கனவே உள்ள போலி பெயர் அல்லது கோட்டை அழித்து, புதிய பெயரை மட்டும் தூய்மையாக வைக்கும்.
+              </p>
+              <div id="studio-clear-bg-options" style="display: flex; align-items: center; gap: 0.75rem; margin-left: 1.6rem;">
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Mask Color:</span>
+                <input type="color" id="studio-bg-color-picker" value="#ffffff" style="width: 28px; height: 28px; border: none; border-radius: 4px; cursor: pointer; background: transparent;" onchange="onBgColorChange()">
+                <input type="text" class="form-control" id="studio-bg-color-hex" value="#ffffff" style="width: 90px; font-family: var(--font-mono); font-size: 0.78rem; padding: 0.35rem 0.6rem;" oninput="onBgColorHexChange()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Save & Generator actions -->
+          <div style="display: flex; gap: 0.75rem; margin-bottom: 1.25rem;">
+            <button type="button" class="btn btn-primary" id="studio-save-btn" onclick="saveStudioConfig()" style="flex: 1;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Configuration
+            </button>
+            <button type="button" class="btn btn-emerald" onclick="useTemplateInBatchGenerator()">
+              🚀 Use in Generator
+            </button>
+          </div>
+
+          <!-- Advanced JSON Accordion -->
+          <details style="background: rgba(15, 23, 42, 0.4); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.6rem 0.85rem;">
+            <summary style="font-size: 0.78rem; color: var(--text-muted); cursor: pointer; font-weight: 500;">
+              ⚙️ Advanced Raw JSON Configuration (Optional)
+            </summary>
+            <div style="margin-top: 0.6rem;">
+              <textarea class="form-control" id="tmpl-field-config" rows="8" style="font-family: var(--font-mono); font-size: 0.78rem;" oninput="onRawJsonChange()"></textarea>
+            </div>
+          </details>
+        </div>
+
+        <!-- RIGHT PANEL: Live Interactive Canvas -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Interactive Visual Placement Canvas</div>
+              <div class="card-subtitle">Click anywhere on template to instantly relocate the recipient's name</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="reloadStudioTemplate()">
+              Refresh
+            </button>
+          </div>
+
+          <div class="studio-canvas-container" id="studio-canvas-container">
+            <canvas id="studio-canvas" class="studio-canvas"></canvas>
+            <div class="coords-pill" id="studio-coords-pill">
+              <span>🎯 Name Position:</span> <span id="pill-coords-text">X: 600, Y: 260</span>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem; font-size: 0.75rem; color: var(--text-dim);">
+            <span>👆 Click anywhere to reposition • Drag to adjust</span>
+            <span id="canvas-status-text">Ready</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 4: PUBLIC CERTIFICATE VERIFIER -->
+    <section id="view-verifier" class="view-panel">
+      <div class="card" style="max-width: 720px; margin: 0 auto;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <div style="width: 56px; height: 56px; background: rgba(99, 102, 241, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: #818cf8;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+          </div>
+          <h2 style="font-family: var(--font-display); font-size: 1.75rem;">Official Certificate Verification</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.3rem;">
+            Verify authenticity and check issued credentials directly against the immutable PostgreSQL database.
+          </p>
+        </div>
+
+        <form id="verify-form" onsubmit="handleVerifySubmit(event)">
+          <div style="display: flex; gap: 0.75rem;">
+            <input type="text" class="form-control" id="verify-id-input" placeholder="Enter Certificate ID (e.g. CERT-2026-5YE795)" style="font-family: var(--font-mono); font-size: 1rem;" required>
+            <button type="submit" class="btn btn-primary" id="verify-submit-btn" style="white-space: nowrap;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              Verify Certificate
+            </button>
+          </div>
+        </form>
+
+        <div class="verified-card" id="verified-success-box">
+          <div class="verified-icon">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <h3 style="font-family: var(--font-display); font-size: 1.4rem; color: #34d399; margin-bottom: 0.4rem;">Valid & Authenticated Certificate</h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">This credential was officially issued by CertGen Studio and verified in PostgreSQL.</p>
+
+          <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--radius-md); padding: 1.25rem; text-align: left; margin-bottom: 1.5rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem;">
+              <div>
+                <span style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">Recipient</span>
+                <div id="v-name" style="font-weight: 600; color: #fff;">-</div>
+              </div>
+              <div>
+                <span style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">Certificate ID</span>
+                <div id="v-id" style="font-family: var(--font-mono); color: #38bdf8;">-</div>
+              </div>
+              <div>
+                <span style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">Program / Course</span>
+                <div id="v-course" style="font-weight: 500; color: #fff;">-</div>
+              </div>
+              <div>
+                <span style="color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase;">Issue Date</span>
+                <div id="v-date" style="color: #fff;">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="verified-error-box" style="display: none; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: var(--radius-md); padding: 1.25rem; text-align: center; margin-top: 1.5rem; color: #fb7185;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-bottom: 0.5rem;"><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>
+          <div style="font-weight: 600;">Certificate Not Found or Revoked</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">Please double check the Certificate ID and try again.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast-container"></div>
+
+  <script>
+    let authToken = null;
+    let currentUser = null;
+    let templatesList = [];
+    let currentPollingInterval = null;
+    let sampleCSVFile = null;
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      if (type === 'error') toast.style.borderLeftColor = 'var(--accent-rose)';
+      if (type === 'success') toast.style.borderLeftColor = 'var(--accent-emerald)';
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+      
+      const btn = Array.from(document.querySelectorAll('.nav-tab-btn')).find(b => b.textContent.toLowerCase().includes(tabId));
+      if (btn) btn.classList.add('active');
+      
+      const panel = document.getElementById(`view-${tabId}`);
+      if (panel) panel.classList.add('active');
+
+      if (tabId === 'dashboard') loadBatchesList();
+      if (tabId === 'generator') loadTemplatesDropdown();
+      if (tabId === 'studio') loadTemplateStudio();
+    }
+
+    async function autoLogin() {
+      try {
+        const res = await fetch('/api/v1/auth/login/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: 'admin', password: 'admin123' })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          authToken = data.token;
+          currentUser = data.user;
+          document.getElementById('user-display-name').textContent = currentUser.username;
+          document.getElementById('user-avatar').textContent = currentUser.username.charAt(0).toUpperCase();
+          loadDashboardStats();
+          loadBatchesList();
+          loadTemplatesDropdown();
+        }
+      } catch (err) {
+        console.error("Auto login error:", err);
+      }
+    }
+
+    async function apiFetch(url, options = {}) {
+      options.headers = options.headers || {};
+      if (authToken) {
+        options.headers['Authorization'] = `Token ${authToken}`;
+      }
+      return fetch(url, options);
+    }
+
+    async function loadDashboardStats() {
+      try {
+        const tmplRes = await apiFetch('/api/v1/templates/');
+        if (tmplRes.ok) {
+          const tmpls = await tmplRes.json();
+          const results = tmpls.results || tmpls;
+          document.getElementById('stat-template-count').textContent = results.length || 0;
+        }
+
+        const batchRes = await apiFetch('/api/v1/batches/');
+        if (batchRes.ok) {
+          const batches = await batchRes.json();
+          const list = batches.results || batches;
+          let totalCerts = 0;
+          list.forEach(b => totalCerts += (b.successful_records || 0));
+          document.getElementById('stat-cert-count').textContent = totalCerts;
+        }
+      } catch (e) {
+        console.error("Stats load error:", e);
+      }
+    }
+
+    async function loadBatchesList() {
+      const tbody = document.getElementById('batches-table-body');
+      try {
+        const res = await apiFetch('/api/v1/batches/');
+        if (!res.ok) return;
+        const data = await res.json();
+        const batches = data.results || data;
+        
+        if (batches.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-dim); padding:2rem;">No batches created yet. Click "1-Click Demo Generation" to generate!</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = batches.map(b => {
+          let badgeClass = 'badge-queued';
+          if (b.status === 'completed') badgeClass = 'badge-success';
+          else if (b.status === 'processing') badgeClass = 'badge-processing';
+          else if (b.status === 'failed') badgeClass = 'badge-failed';
+
+          const pct = b.total_records ? Math.round((b.processed_records / b.total_records) * 100) : 0;
+          const created = new Date(b.created_at).toLocaleString();
+
+          return `
+            <tr>
+              <td style="font-weight:600; color:#fff;">${b.name}</td>
+              <td><span class="badge ${badgeClass}">${b.status}</span></td>
+              <td>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <div style="flex:1; background:rgba(255,255,255,0.1); height:6px; border-radius:3px; overflow:hidden;">
+                    <div style="background:#38bdf8; width:${pct}%; height:100%;"></div>
+                  </div>
+                  <span style="font-size:0.75rem; font-family:var(--font-mono);">${pct}%</span>
+                </div>
+              </td>
+              <td style="font-family:var(--font-mono);">${b.successful_records} / ${b.total_records || '-'}</td>
+              <td style="font-size:0.8rem; color:var(--text-muted);">${created}</td>
+              <td>
+                <div style="display:flex; gap:0.4rem;">
+                  ${b.status === 'completed' || b.status === 'partially_completed' ? `
+                    <a href="/api/v1/batches/${b.id}/download-zip/?token=${authToken}" class="btn btn-emerald btn-sm">ZIP</a>
+                  ` : ''}
+                  <button class="btn btn-secondary btn-sm" onclick="trackBatchLive('${b.id}', '${b.name}')">Track</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--accent-rose); padding:1rem;">Failed to fetch batches: ${err.message}</td></tr>`;
+      }
+    }
+
+    async function loadTemplatesDropdown() {
+      const select = document.getElementById('batch-template-select');
+      try {
+        const res = await apiFetch('/api/v1/templates/');
+        if (!res.ok) return;
+        const data = await res.json();
+        templatesList = data.results || data;
+
+        if (templatesList.length === 0) {
+          select.innerHTML = '<option value="">No templates available. Create one in Template Studio.</option>';
+          return;
+        }
+
+        select.innerHTML = templatesList.map(t => `
+          <option value="${t.id}">${t.name} (${t.width}x${t.height}px)</option>
+        `).join('');
+        onBatchTemplateSelectChange();
+      } catch (err) {
+        select.innerHTML = '<option value="">Error loading templates</option>';
+      }
+    }
+
+    function downloadSampleCSV() {
+      const csv = `name,email,course_name,completion_date\nSarah Connor,sarah@example.com,Full Stack AI Engineering,2026-10-15\nJohn Wick,wick@example.com,Full Stack AI Engineering,2026-10-15\nAlexander Vance,alex@example.com,Full Stack AI Engineering,2026-10-15\nPriya Sharma,priya@example.com,Full Stack AI Engineering,2026-10-15\nMichael Scott,michael@example.com,Full Stack AI Engineering,2026-10-15`;
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'participants_sample.csv';
+      a.click();
+      showToast('Sample participants CSV downloaded', 'success');
+    }
+
+    async function usePreloadedCSV() {
+      try {
+        const res = await fetch('/media/sample_participants.csv');
+        const text = await res.text();
+        const blob = new Blob([text], { type: 'text/csv' });
+        sampleCSVFile = new File([blob], 'sample_participants.csv', { type: 'text/csv' });
+        showToast('Preloaded sample participant records (5 records ready)', 'success');
+        document.getElementById('batch-name-input').value = 'AI Masterclass Cohort - ' + new Date().toLocaleTimeString();
+      } catch (e) {
+        showToast('Could not load preloaded sample: ' + e.message, 'error');
+      }
+    }
+
+    async function handleBatchSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('batch-name-input').value;
+      const templateId = document.getElementById('batch-template-select').value;
+      const fileInput = document.getElementById('batch-file-input');
+      const file = fileInput.files[0] || sampleCSVFile;
+
+      if (!templateId) {
+        showToast('Please select a certificate template', 'error');
+        return;
+      }
+      if (!file) {
+        showToast('Please upload or preload a participant CSV/XLSX file', 'error');
+        return;
+      }
+
+      const submitBtn = document.getElementById('submit-batch-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Uploading & Validating...';
+
+      addLog(`Initiating batch creation: "${name}"...`, 'info');
+
+      try {
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('template', templateId);
+        formData.append('participant_file', file);
+
+        const createRes = await apiFetch('/api/v1/batches/', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!createRes.ok) {
+          const err = await createRes.json();
+          throw new Error(JSON.stringify(err));
+        }
+
+        const batch = await createRes.json();
+        addLog(`Batch #${batch.id} created successfully! Starting validation...`, 'success');
+
+        const valRes = await apiFetch(`/api/v1/batches/${batch.id}/validate/`, {
+          method: 'POST'
+        });
+
+        if (!valRes.ok) {
+          const err = await valRes.json();
+          throw new Error('Validation failed: ' + JSON.stringify(err));
+        }
+
+        const valData = await valRes.json();
+        addLog(`Validation passed: ${valData.valid_rows} valid rows out of ${valData.total_rows} total rows.`, 'success');
+
+        addLog(`Triggering certificate generation task...`, 'info');
+        const genRes = await apiFetch(`/api/v1/batches/${batch.id}/generate/`, {
+          method: 'POST'
+        });
+
+        if (!genRes.ok) {
+          const err = await genRes.json();
+          throw new Error('Generation failed: ' + JSON.stringify(err));
+        }
+
+        addLog(`Generation task dispatched! Tracking real-time progress via Celery...`, 'info');
+        showToast('Generation in progress!', 'success');
+
+        trackBatchLive(batch.id, name);
+
+      } catch (err) {
+        addLog(`Error: ${err.message}`, 'warn');
+        showToast(`Failed: ${err.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Validate & Start Generation';
+      }
+    }
+
+    async function loadSampleBatchAndGenerate() {
+      switchTab('generator');
+      await usePreloadedCSV();
+      setTimeout(() => {
+        document.getElementById('create-batch-form').dispatchEvent(new Event('submit'));
+      }, 400);
+    }
+
+    function trackBatchLive(batchId, batchName) {
+      if (currentPollingInterval) clearInterval(currentPollingInterval);
+
+      document.getElementById('monitor-task-title').textContent = batchName || `Batch #${batchId}`;
+      document.getElementById('batch-completed-actions').style.display = 'none';
+      document.getElementById('generated-certs-card').style.display = 'none';
+
+      const statusBadge = document.getElementById('monitor-badge-status');
+      const progressFill = document.getElementById('monitor-progress-fill');
+      const progressPct = document.getElementById('monitor-percentage');
+
+      statusBadge.className = 'badge badge-processing';
+      statusBadge.textContent = 'Processing';
+
+      addLog(`Connected live stream to batch #${batchId}...`, 'info');
+
+      currentPollingInterval = setInterval(async () => {
+        try {
+          const res = await apiFetch(`/api/v1/batches/${batchId}/status/`);
+          if (!res.ok) return;
+          const data = await res.json();
+
+          document.getElementById('p-total').textContent = data.total || 0;
+          document.getElementById('p-processed').textContent = data.processed || 0;
+          document.getElementById('p-success').textContent = data.successful || 0;
+          document.getElementById('p-failed').textContent = data.failed || 0;
+
+          const pct = data.progress_percentage || 0;
+          progressFill.style.width = `${pct}%`;
+          progressPct.textContent = `${pct}%`;
+
+          addLog(`Processed ${data.processed}/${data.total} (${pct}%) • Success: ${data.successful}`, 'info');
+
+          if (data.status === 'completed' || data.status === 'partially_completed' || data.status === 'failed') {
+            clearInterval(currentPollingInterval);
+            currentPollingInterval = null;
+
+            if (data.status === 'completed') {
+              statusBadge.className = 'badge badge-success';
+              statusBadge.textContent = 'Completed';
+              progressFill.style.width = '100%';
+              progressPct.textContent = '100%';
+              addLog(`🎉 All certificates generated successfully! Batch is complete.`, 'success');
+              showToast('Batch completed successfully!', 'success');
+            } else if (data.status === 'failed') {
+              statusBadge.className = 'badge badge-failed';
+              statusBadge.textContent = 'Failed';
+              addLog(`❌ Batch ended with failure: ${JSON.stringify(data.errors)}`, 'warn');
+            }
+
+            const downloadZipBtn = document.getElementById('download-zip-btn');
+            downloadZipBtn.href = `/api/v1/batches/${batchId}/download-zip/?token=${authToken}`;
+            document.getElementById('batch-completed-actions').style.display = 'block';
+
+            loadBatchCertificates(batchId);
+            loadDashboardStats();
+            loadBatchesList();
+          }
+        } catch (err) {
+          console.error("Polling error:", err);
+        }
+      }, 700);
+    }
+
+    async function loadBatchCertificates(batchId) {
+      try {
+        const res = await apiFetch(`/api/v1/batches/${batchId}/certificates/`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const certs = data.results || data;
+
+        const tbody = document.getElementById('generated-certs-tbody');
+        if (certs.length === 0) return;
+
+        tbody.innerHTML = certs.map(c => `
+          <tr>
+            <td style="font-family:var(--font-mono); font-weight:600; color:#38bdf8;">${c.certificate_id}</td>
+            <td style="font-weight:600; color:#fff;">${c.recipient_name}</td>
+            <td style="color:var(--text-muted);">${c.recipient_email || '-'}</td>
+            <td>${c.course_name || '-'}</td>
+            <td><span class="badge ${c.status === 'generated' ? 'badge-success' : 'badge-failed'}">${c.status}</span></td>
+            <td>
+              ${c.generated_file ? `
+                <a href="${c.generated_file}" target="_blank" class="btn btn-primary btn-sm">View PDF</a>
+              ` : '-'}
+            </td>
+          </tr>
+        `).join('');
+
+        document.getElementById('generated-certs-card').style.display = 'block';
+      } catch (err) {
+        console.error("Certificates load error:", err);
+      }
+    }
+
+    function addLog(msg, type = 'info') {
+      const consoleBox = document.getElementById('stream-console');
+      const time = new Date().toLocaleTimeString();
+      const line = document.createElement('div');
+      line.className = `stream-line ${type}`;
+      line.innerHTML = `<span class="time">[${time}]</span> ${msg}`;
+      consoleBox.appendChild(line);
+      consoleBox.scrollTop = consoleBox.scrollHeight;
+    }
+
+    async function handleVerifySubmit(e) {
+      e.preventDefault();
+      const certId = document.getElementById('verify-id-input').value.trim();
+      const btn = document.getElementById('verify-submit-btn');
+      const successBox = document.getElementById('verified-success-box');
+      const errorBox = document.getElementById('verified-error-box');
+
+      successBox.style.display = 'none';
+      errorBox.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+
+      try {
+        const res = await fetch(`/api/v1/verify/${encodeURIComponent(certId)}/`);
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('v-name').textContent = data.recipient_name;
+          document.getElementById('v-id').textContent = data.certificate_id;
+          document.getElementById('v-course').textContent = data.course_name || 'Standard Achievement';
+          document.getElementById('v-date').textContent = data.completion_date || data.issued_date || 'Verified';
+          successBox.style.display = 'block';
+          showToast('Certificate verified successfully!', 'success');
+        } else {
+          errorBox.style.display = 'block';
+        }
+      } catch (err) {
+        errorBox.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Verify Certificate';
+      }
+    }
+
+    // ===== TEMPLATE & NAME POSITION STUDIO STATE =====
+    let studioMode = 'existing'; // 'existing' | 'new'
+    let activeStudioTemplate = null;
+    let activeStudioImg = new Image();
+    let isStudioImgLoaded = false;
+    let studioFieldConfig = {
+      name: { x: 600, y: 260, font_size: 32, color: '#1e293b', align: 'center', clear_background: true, bg_color: '#ffffff' }
+    };
+    let isDraggingNameTarget = false;
+    let newTemplateFile = null;
+
+    function setStudioMode(mode) {
+      studioMode = mode;
+      document.getElementById('btn-mode-existing').classList.toggle('active', mode === 'existing');
+      document.getElementById('btn-mode-new').classList.toggle('active', mode === 'new');
+      document.getElementById('studio-existing-picker').style.display = mode === 'existing' ? 'block' : 'none';
+      document.getElementById('studio-new-upload-box').style.display = mode === 'new' ? 'block' : 'none';
+      
+      const saveBtn = document.getElementById('studio-save-btn');
+      if (mode === 'new') {
+        saveBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Upload & Save Template`;
+      } else {
+        saveBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Configuration`;
+      }
+    }
+
+    async function loadTemplateStudio(selectId = null) {
+      initStudioCanvasListeners();
+      const select = document.getElementById('studio-template-select');
+      try {
+        if (!templatesList || templatesList.length === 0) {
+          const res = await apiFetch('/api/v1/templates/');
+          if (res.ok) {
+            const data = await res.json();
+            templatesList = data.results || data;
+          }
+        }
+
+        if (templatesList.length === 0) {
+          select.innerHTML = '<option value="">No templates found. Please upload a new template.</option>';
+          setStudioMode('new');
+          return;
+        }
+
+        select.innerHTML = templatesList.map(t => `
+          <option value="${t.id}">${t.name} (${t.width}x${t.height}px)</option>
+        `).join('');
+
+        const targetId = selectId || (activeStudioTemplate ? activeStudioTemplate.id : templatesList[0].id);
+        select.value = targetId;
+        onStudioTemplateSelectChange();
+      } catch (err) {
+        console.error("Error loading templates into studio:", err);
+      }
+    }
+
+    function onStudioTemplateSelectChange() {
+      const select = document.getElementById('studio-template-select');
+      const selectedId = select.value;
+      const tmpl = templatesList.find(t => String(t.id) === String(selectedId));
+      if (!tmpl) return;
+
+      loadTemplateIntoStudio(tmpl);
+    }
+
+    function loadTemplateIntoStudio(tmpl) {
+      activeStudioTemplate = tmpl;
+      studioFieldConfig = JSON.parse(JSON.stringify(tmpl.field_configuration || {}));
+      if (!studioFieldConfig.name) {
+        studioFieldConfig.name = {
+          x: Math.round((tmpl.width || 1200) / 2),
+          y: Math.round((tmpl.height || 800) * 0.40),
+          font_size: Math.round((tmpl.width || 1200) * 0.028) || 32,
+          color: '#1e293b',
+          align: 'center',
+          clear_background: true,
+          bg_color: '#ffffff'
+        };
+      }
+
+      document.getElementById('studio-dim-badge').textContent = `${tmpl.width || 1200} x ${tmpl.height || 800} px`;
+      updateStudioInputsFromConfig();
+
+      isStudioImgLoaded = false;
+      document.getElementById('canvas-status-text').textContent = 'Loading template background...';
+      activeStudioImg = new Image();
+      activeStudioImg.crossOrigin = 'anonymous';
+      activeStudioImg.onload = () => {
+        isStudioImgLoaded = true;
+        document.getElementById('canvas-status-text').textContent = 'Ready • Click anywhere to position Name';
+        document.getElementById('studio-dim-badge').textContent = `${activeStudioImg.naturalWidth} x ${activeStudioImg.naturalHeight} px`;
+        renderStudioCanvas();
+      };
+      activeStudioImg.onerror = () => {
+        document.getElementById('canvas-status-text').textContent = 'Failed to load template image.';
+        showToast('Failed to load template image preview', 'error');
+      };
+      activeStudioImg.src = tmpl.template_file;
+    }
+
+    function onStudioNewFileSelected(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      newTemplateFile = file;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        isStudioImgLoaded = false;
+        activeStudioImg = new Image();
+        activeStudioImg.onload = () => {
+          isStudioImgLoaded = true;
+          document.getElementById('studio-dim-badge').textContent = `${activeStudioImg.naturalWidth} x ${activeStudioImg.naturalHeight} px`;
+          autoDetectNamePosition(false);
+          document.getElementById('canvas-status-text').textContent = `New template image loaded (${activeStudioImg.naturalWidth}x${activeStudioImg.naturalHeight})`;
+          showToast(`✨ Template image loaded! Auto-detected name position.`, 'success');
+        };
+        activeStudioImg.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function autoDetectNamePosition(showNotification = true) {
+      const w = isStudioImgLoaded ? activeStudioImg.naturalWidth : (activeStudioTemplate?.width || 1200);
+      const h = isStudioImgLoaded ? activeStudioImg.naturalHeight : (activeStudioTemplate?.height || 800);
+
+      if (!studioFieldConfig.name) studioFieldConfig.name = {};
+      studioFieldConfig.name.x = Math.round(w / 2);
+      studioFieldConfig.name.y = Math.round(h * 0.40);
+      studioFieldConfig.name.align = 'center';
+      studioFieldConfig.name.font_size = Math.max(20, Math.round(w * 0.028));
+      studioFieldConfig.name.color = studioFieldConfig.name.color || '#1e293b';
+      if (studioFieldConfig.name.clear_background === undefined) {
+        studioFieldConfig.name.clear_background = true;
+        studioFieldConfig.name.bg_color = '#ffffff';
+      }
+
+      updateStudioInputsFromConfig();
+      renderStudioCanvas();
+
+      if (showNotification) {
+        showToast(`✨ Name auto-placed at center: (${studioFieldConfig.name.x}, ${studioFieldConfig.name.y})`, 'success');
+      }
+    }
+
+    function centerNameHorizontally() {
+      const w = isStudioImgLoaded ? activeStudioImg.naturalWidth : (activeStudioTemplate?.width || 1200);
+      if (!studioFieldConfig.name) studioFieldConfig.name = {};
+      studioFieldConfig.name.x = Math.round(w / 2);
+      updateStudioInputsFromConfig();
+      renderStudioCanvas();
+      showToast(`Centered horizontally at X: ${studioFieldConfig.name.x}`, 'info');
+    }
+
+    function nudgeCoord(dx, dy) {
+      if (!studioFieldConfig.name) autoDetectNamePosition(false);
+      studioFieldConfig.name.x = Math.max(0, (studioFieldConfig.name.x || 0) + dx);
+      studioFieldConfig.name.y = Math.max(0, (studioFieldConfig.name.y || 0) + dy);
+      updateStudioInputsFromConfig();
+      renderStudioCanvas();
+    }
+
+    function onCoordInputChange() {
+      const x = parseInt(document.getElementById('studio-coord-x').value, 10);
+      const y = parseInt(document.getElementById('studio-coord-y').value, 10);
+      if (!isNaN(x)) studioFieldConfig.name.x = x;
+      if (!isNaN(y)) studioFieldConfig.name.y = y;
+      syncVisualConfigToJson();
+      renderStudioCanvas();
+    }
+
+    function onFontSizeChange() {
+      const val = parseInt(document.getElementById('studio-fontsize-range').value, 10);
+      document.getElementById('studio-fontsize-badge').textContent = `${val}px`;
+      if (!studioFieldConfig.name) studioFieldConfig.name = {};
+      studioFieldConfig.name.font_size = val;
+      syncVisualConfigToJson();
+      renderStudioCanvas();
+    }
+
+    function onColorChange() {
+      const val = document.getElementById('studio-color-picker').value;
+      document.getElementById('studio-color-hex').value = val;
+      if (!studioFieldConfig.name) studioFieldConfig.name = {};
+      studioFieldConfig.name.color = val;
+      syncVisualConfigToJson();
+      renderStudioCanvas();
+    }
+
+    function onColorHexChange() {
+      const val = document.getElementById('studio-color-hex').value.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+        document.getElementById('studio-color-picker').value = val;
+        if (!studioFieldConfig.name) studioFieldConfig.name = {};
+        studioFieldConfig.name.color = val;
+        syncVisualConfigToJson();
+        renderStudioCanvas();
+      }
+    }
+
+    function setTextAlign(align) {
+      if (!studioFieldConfig.name) studioFieldConfig.name = {};
+      studioFieldConfig.name.align = align;
+      ['left', 'center', 'right'].forEach(a => {
+        const btn = document.getElementById(`align-btn-${a}`);
+        if (btn) btn.classList.toggle('active', a === align);
+      });
+      syncVisualConfigToJson();
+      renderStudioCanvas();
+    }
+
+    function onClearBgChange() {
+      const checked = document.getElementById('studio-clear-bg-checkbox').checked;
+      if (!studioFieldConfig.name) studioFieldConfig.name = {};
+      studioFieldConfig.name.clear_background = checked;
+      document.getElementById('studio-clear-bg-options').style.opacity = checked ? '1' : '0.4';
+      syncVisualConfigToJson();
+      renderStudioCanvas();
+    }
+
+    function onBgColorChange() {
+      const val = document.getElementById('studio-bg-color-picker').value;
+      document.getElementById('studio-bg-color-hex').value = val;
+      if (!studioFieldConfig.name) studioFieldConfig.name = {};
+      studioFieldConfig.name.bg_color = val;
+      syncVisualConfigToJson();
+      renderStudioCanvas();
+    }
+
+    function onBgColorHexChange() {
+      const val = document.getElementById('studio-bg-color-hex').value.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+        document.getElementById('studio-bg-color-picker').value = val;
+        if (!studioFieldConfig.name) studioFieldConfig.name = {};
+        studioFieldConfig.name.bg_color = val;
+        syncVisualConfigToJson();
+        renderStudioCanvas();
+      }
+    }
+
+    function updateStudioInputsFromConfig() {
+      const nameCfg = studioFieldConfig.name || { x: 600, y: 260, font_size: 32, color: '#1e293b', align: 'center', clear_background: true, bg_color: '#ffffff' };
+      document.getElementById('studio-coord-x').value = nameCfg.x ?? 600;
+      document.getElementById('studio-coord-y').value = nameCfg.y ?? 260;
+      document.getElementById('studio-fontsize-range').value = nameCfg.font_size ?? 32;
+      document.getElementById('studio-fontsize-badge').textContent = `${nameCfg.font_size ?? 32}px`;
+      document.getElementById('studio-color-picker').value = nameCfg.color || '#1e293b';
+      document.getElementById('studio-color-hex').value = nameCfg.color || '#1e293b';
+      
+      const align = nameCfg.align || 'center';
+      ['left', 'center', 'right'].forEach(a => {
+        const btn = document.getElementById(`align-btn-${a}`);
+        if (btn) btn.classList.toggle('active', a === align);
+      });
+
+      const clearBg = !!nameCfg.clear_background;
+      document.getElementById('studio-clear-bg-checkbox').checked = clearBg;
+      document.getElementById('studio-clear-bg-options').style.opacity = clearBg ? '1' : '0.4';
+      document.getElementById('studio-bg-color-picker').value = nameCfg.bg_color || '#ffffff';
+      document.getElementById('studio-bg-color-hex').value = nameCfg.bg_color || '#ffffff';
+
+      syncVisualConfigToJson();
+    }
+
+    function syncVisualConfigToJson() {
+      const jsonArea = document.getElementById('tmpl-field-config');
+      jsonArea.value = JSON.stringify(studioFieldConfig, null, 2);
+    }
+
+    function onRawJsonChange() {
+      try {
+        const parsed = JSON.parse(document.getElementById('tmpl-field-config').value);
+        studioFieldConfig = parsed;
+        if (studioFieldConfig.name) {
+          document.getElementById('studio-coord-x').value = studioFieldConfig.name.x ?? 600;
+          document.getElementById('studio-coord-y').value = studioFieldConfig.name.y ?? 260;
+          document.getElementById('studio-fontsize-range').value = studioFieldConfig.name.font_size ?? 32;
+          document.getElementById('studio-fontsize-badge').textContent = `${studioFieldConfig.name.font_size ?? 32}px`;
+          document.getElementById('studio-color-picker').value = studioFieldConfig.name.color || '#1e293b';
+          document.getElementById('studio-color-hex').value = studioFieldConfig.name.color || '#1e293b';
+        }
+        renderStudioCanvas();
+      } catch (e) {
+        // user still typing JSON
+      }
+    }
+
+    function renderStudioCanvas() {
+      const canvas = document.getElementById('studio-canvas');
+      if (!canvas || !isStudioImgLoaded) return;
+
+      const ctx = canvas.getContext('2d');
+      const w = activeStudioImg.naturalWidth;
+      const h = activeStudioImg.naturalHeight;
+
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+
+      // 1. Draw template background
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(activeStudioImg, 0, 0, w, h);
+
+      const nameCfg = studioFieldConfig.name || { x: Math.round(w / 2), y: Math.round(h * 0.4), font_size: 32, color: '#1e293b', align: 'center' };
+      const x = nameCfg.x ?? Math.round(w / 2);
+      const y = nameCfg.y ?? Math.round(h * 0.4);
+      const fontSize = nameCfg.font_size || 32;
+      const color = nameCfg.color || '#1e293b';
+      const align = nameCfg.align || 'center';
+      const sampleText = document.getElementById('studio-sample-name')?.value || 'Saison';
+
+      // 2. Clear background under name if configured (masking existing placeholder)
+      if (nameCfg.clear_background) {
+        const bgColor = nameCfg.bg_color || '#ffffff';
+        ctx.font = `600 ${fontSize}px 'Outfit', 'Inter', sans-serif`;
+        const textMetrics = ctx.measureText(sampleText);
+        const maskW = Math.max(textMetrics.width + 40, fontSize * 10);
+        const maskH = Math.round(fontSize * 1.5);
+        let maskX = x;
+        if (align === 'center') maskX = x - maskW / 2;
+        else if (align === 'right') maskX = x - maskW;
+
+        const maskY = y - maskH * 0.85;
+
+        // Fill mask
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(maskX, maskY, maskW, maskH);
+
+        // Editor preview guide dashed border
+        ctx.save();
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(maskX, maskY, maskW, maskH);
+        ctx.restore();
+      }
+
+      // 3. Draw Sample Participant Name
+      ctx.font = `600 ${fontSize}px 'Outfit', 'Inter', sans-serif`;
+      ctx.fillStyle = color;
+      ctx.textAlign = align;
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(sampleText, x, y);
+
+      // 4. Draw glowing Target Pin indicator at (x, y)
+      ctx.save();
+      // Target crosshair lines
+      ctx.strokeStyle = 'rgba(99, 102, 241, 0.85)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(x - 30, y);
+      ctx.lineTo(x + 30, y);
+      ctx.moveTo(x, y - 30);
+      ctx.lineTo(x + 30, y);
+      ctx.stroke();
+
+      // Center point
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#6366f1';
+      ctx.beginPath();
+      ctx.arc(x, y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Tooltip pill tag: "[ 👤 Name (x, y) ]"
+      const tagText = `👤 Recipient Name (${x}, ${y})`;
+      ctx.font = `bold 13px 'JetBrains Mono', monospace`;
+      const tagW = ctx.measureText(tagText).width + 16;
+      const tagH = 24;
+      const tagX = Math.min(w - tagW - 10, Math.max(10, x - tagW / 2));
+      const tagY = Math.max(10, y - 34);
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.beginPath();
+      ctx.roundRect(tagX, tagY, tagW, tagH, 6);
+      ctx.fill();
+      ctx.strokeStyle = '#6366f1';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(tagText, tagX + 8, tagY + tagH / 2);
+      ctx.restore();
+
+      // Update Pill
+      document.getElementById('pill-coords-text').textContent = `X: ${x}, Y: ${y} • Size: ${fontSize}px • Align: ${align}`;
+    }
+
+    let isStudioListenersInitialized = false;
+    function initStudioCanvasListeners() {
+      if (isStudioListenersInitialized) return;
+      const canvas = document.getElementById('studio-canvas');
+      if (!canvas) return;
+
+      function getCanvasCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        return {
+          x: Math.round((e.clientX - rect.left) * scaleX),
+          y: Math.round((e.clientY - rect.top) * scaleY)
+        };
+      }
+
+      canvas.addEventListener('click', (e) => {
+        if (!isStudioImgLoaded) return;
+        const coords = getCanvasCoords(e);
+        if (!studioFieldConfig.name) studioFieldConfig.name = {};
+        studioFieldConfig.name.x = Math.max(0, Math.min(canvas.width, coords.x));
+        studioFieldConfig.name.y = Math.max(0, Math.min(canvas.height, coords.y));
+        updateStudioInputsFromConfig();
+        renderStudioCanvas();
+      });
+
+      canvas.addEventListener('mousedown', (e) => {
+        if (!isStudioImgLoaded) return;
+        const coords = getCanvasCoords(e);
+        const nameX = studioFieldConfig.name?.x ?? 0;
+        const nameY = studioFieldConfig.name?.y ?? 0;
+        const dist = Math.hypot(coords.x - nameX, coords.y - nameY);
+        if (dist < 40) {
+          isDraggingNameTarget = true;
+        }
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDraggingNameTarget || !isStudioImgLoaded) return;
+        const coords = getCanvasCoords(e);
+        studioFieldConfig.name.x = Math.max(0, Math.min(canvas.width, coords.x));
+        studioFieldConfig.name.y = Math.max(0, Math.min(canvas.height, coords.y));
+        updateStudioInputsFromConfig();
+        renderStudioCanvas();
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (isDraggingNameTarget) {
+          isDraggingNameTarget = false;
+          showToast(`Name position updated to (${studioFieldConfig.name.x}, ${studioFieldConfig.name.y})`, 'info');
+        }
+      });
+
+      isStudioListenersInitialized = true;
+    }
+
+    async function saveStudioConfig() {
+      const btn = document.getElementById('studio-save-btn');
+      btn.disabled = true;
+
+      try {
+        if (studioMode === 'new') {
+          const name = document.getElementById('tmpl-new-name').value.trim();
+          if (!name) {
+            showToast('Please enter a template name', 'error');
+            btn.disabled = false;
+            return;
+          }
+          if (!newTemplateFile) {
+            showToast('Please upload a template background file', 'error');
+            btn.disabled = false;
+            return;
+          }
+
+          btn.textContent = 'Uploading...';
+          const formData = new FormData();
+          formData.append('name', name);
+          formData.append('template_file', newTemplateFile);
+          formData.append('field_configuration', JSON.stringify(studioFieldConfig));
+
+          const res = await apiFetch('/api/v1/templates/', {
+            method: 'POST',
+            body: formData
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(JSON.stringify(err));
+          }
+
+          const saved = await res.json();
+          showToast(`🎉 Template "${saved.name}" uploaded with customized Name position!`, 'success');
+
+          await loadTemplatesDropdown();
+          setStudioMode('existing');
+          await loadTemplateStudio(saved.id);
+        } else {
+          if (!activeStudioTemplate) {
+            showToast('No active template selected', 'error');
+            btn.disabled = false;
+            return;
+          }
+
+          btn.textContent = 'Saving...';
+          const res = await apiFetch(`/api/v1/templates/${activeStudioTemplate.id}/`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              field_configuration: studioFieldConfig
+            })
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(JSON.stringify(err));
+          }
+
+          const updated = await res.json();
+          activeStudioTemplate.field_configuration = updated.field_configuration;
+          showToast(`✅ Saved! Name will now be stamped at (${studioFieldConfig.name.x}, ${studioFieldConfig.name.y})`, 'success');
+          loadTemplatesDropdown();
+        }
+      } catch (err) {
+        showToast('Save failed: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Configuration`;
+      }
+    }
+
+    function useTemplateInBatchGenerator() {
+      if (!activeStudioTemplate) {
+        showToast('Please select or save a template first', 'error');
+        return;
+      }
+      switchTab('generator');
+      const select = document.getElementById('batch-template-select');
+      select.value = activeStudioTemplate.id;
+      onBatchTemplateSelectChange();
+      showToast(`Selected "${activeStudioTemplate.name}" in Batch Generator`, 'success');
+    }
+
+    function onBatchTemplateSelectChange() {
+      const select = document.getElementById('batch-template-select');
+      const infoBox = document.getElementById('batch-template-info-box');
+      const coordsText = document.getElementById('batch-template-coords-text');
+      const tmplId = select.value;
+
+      if (!tmplId || !templatesList) {
+        infoBox.style.display = 'none';
+        return;
+      }
+
+      const tmpl = templatesList.find(t => String(t.id) === String(tmplId));
+      if (!tmpl) {
+        infoBox.style.display = 'none';
+        return;
+      }
+
+      const nameCfg = tmpl.field_configuration?.name;
+      if (nameCfg) {
+        const clearText = nameCfg.clear_background ? ' • Mask Underneath: Yes' : '';
+        coordsText.textContent = `${nameCfg.align || 'center'} (X: ${nameCfg.x}, Y: ${nameCfg.y}) • Font: ${nameCfg.font_size || 32}px • Color: ${nameCfg.color || '#1e293b'}${clearText}`;
+      } else {
+        coordsText.textContent = `Auto-Centered (${Math.round((tmpl.width || 1200) / 2)}, ${Math.round((tmpl.height || 800) * 0.4)})`;
+      }
+      infoBox.style.display = 'block';
+    }
+
+    function openSelectedTemplateInStudio() {
+      const select = document.getElementById('batch-template-select');
+      const tmplId = select.value;
+      switchTab('studio');
+      setStudioMode('existing');
+      loadTemplateStudio(tmplId);
+    }
+
+    function reloadStudioTemplate() {
+      if (activeStudioTemplate) {
+        loadTemplateIntoStudio(activeStudioTemplate);
+        showToast('Preview refreshed', 'info');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      autoLogin();
+    });
+  </script>
+</body>
+</html>

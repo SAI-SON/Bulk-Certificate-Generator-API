@@ -12,7 +12,11 @@ FIELD_CONFIG_SCHEMA = {
                 "font_size": {"type": "integer", "minimum": 1},
                 "font": {"type": "string"},
                 "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
-                "align": {"type": "string", "enum": ["left", "center", "right"]}
+                "align": {"type": "string", "enum": ["left", "center", "right"]},
+                "clear_background": {"type": "boolean"},
+                "bg_color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+                "mask_width": {"type": "integer", "minimum": 1},
+                "mask_height": {"type": "integer", "minimum": 1}
             },
             "required": ["x", "y"],
             "additionalProperties": False

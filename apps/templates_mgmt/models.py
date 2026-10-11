@@ -1,10 +1,17 @@
+import os
+import uuid
 from django.db import models
 from django.conf import settings
 from django.core.validators import FileExtensionValidator
+from django.utils.text import get_valid_filename
 
 
 def template_upload_path(instance, filename):
-    return f"{settings.TEMPLATE_UPLOAD_DIR}/user_{instance.owner.id}/{filename}"
+    filename = get_valid_filename(filename)
+    base, ext = os.path.splitext(filename)
+    safe_base = base[:50]
+    unique_name = f"{safe_base}_{uuid.uuid4().hex[:8]}{ext}"
+    return f"{settings.TEMPLATE_UPLOAD_DIR}/user_{instance.owner.id}/{unique_name}"
 
 
 class CertificateTemplate(models.Model):
@@ -16,6 +23,7 @@ class CertificateTemplate(models.Model):
     )
     name = models.CharField(max_length=255, help_text="User-friendly name for this template.")
     template_file = models.ImageField(
+        max_length=500,
         upload_to=template_upload_path,
         validators=[FileExtensionValidator(allowed_extensions=settings.ALLOWED_TEMPLATE_FORMATS)],
         help_text="Background image for the certificate.",

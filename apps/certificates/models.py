@@ -1,10 +1,16 @@
+import os
 import uuid
 from django.db import models
 from django.conf import settings
+from django.utils.text import get_valid_filename
 
 
 def certificate_upload_path(instance, filename):
-    return f"{settings.CERTIFICATE_UPLOAD_DIR}/batch_{instance.batch.id}/{filename}"
+    filename = get_valid_filename(filename)
+    base, ext = os.path.splitext(filename)
+    safe_base = base[:60]
+    unique_name = f"{safe_base}{ext}"
+    return f"{settings.CERTIFICATE_UPLOAD_DIR}/batch_{instance.batch.id}/{unique_name}"
 
 
 class Certificate(models.Model):
@@ -27,7 +33,7 @@ class Certificate(models.Model):
     # Public verification ID
     certificate_id = models.CharField(max_length=100, unique=True, db_index=True)
     
-    generated_file = models.FileField(upload_to=certificate_upload_path, blank=True, null=True)
+    generated_file = models.FileField(max_length=500, upload_to=certificate_upload_path, blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="generated")
     error_message = models.TextField(blank=True)
     

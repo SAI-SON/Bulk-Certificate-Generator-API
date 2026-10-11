@@ -1,11 +1,17 @@
+import os
 import uuid
 from django.db import models
 from django.conf import settings
 from django.core.validators import FileExtensionValidator
+from django.utils.text import get_valid_filename
 
 
 def participant_upload_path(instance, filename):
-    return f"{settings.PARTICIPANT_UPLOAD_DIR}/user_{instance.owner.id}/{instance.id}_{filename}"
+    filename = get_valid_filename(filename)
+    base, ext = os.path.splitext(filename)
+    safe_base = base[:50]
+    unique_name = f"{instance.id}_{safe_base}{ext}"
+    return f"{settings.PARTICIPANT_UPLOAD_DIR}/user_{instance.owner.id}/{unique_name}"
 
 
 class CertificateBatch(models.Model):
@@ -28,6 +34,7 @@ class CertificateBatch(models.Model):
         "templates_mgmt.CertificateTemplate", on_delete=models.RESTRICT, related_name="batches"
     )
     participant_file = models.FileField(
+        max_length=500,
         upload_to=participant_upload_path,
         validators=[FileExtensionValidator(allowed_extensions=["csv", "xlsx"])],
     )

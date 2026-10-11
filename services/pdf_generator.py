@@ -107,6 +107,19 @@ class PDFGenerator:
                 color_hex = config.get("color", settings.DEFAULT_FONT_COLOR)
                 align = config.get("align", "left")
                 
+                # Optional: Clear/erase existing placeholder on template before drawing new text
+                if config.get("clear_background"):
+                    bg_color = config.get("bg_color", "#ffffff")
+                    mask_w = config.get("mask_width", int(font_size * max(len(text), 12) * 0.65))
+                    mask_h = config.get("mask_height", int(font_size * 1.4))
+                    c.setFillColor(HexColor(bg_color))
+                    if align == "center":
+                        c.rect(x - mask_w / 2, y - 4, mask_w, mask_h, fill=1, stroke=0)
+                    elif align == "right":
+                        c.rect(x - mask_w, y - 4, mask_w, mask_h, fill=1, stroke=0)
+                    else:
+                        c.rect(x, y - 4, mask_w, mask_h, fill=1, stroke=0)
+
                 # Apply styles
                 c.setFont(font_name, font_size)
                 c.setFillColor(HexColor(color_hex))
