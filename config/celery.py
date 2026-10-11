@@ -15,5 +15,7 @@ app = Celery("certgen")
 # Read Celery config from Django settings, using the CELERY_ namespace.
 app.config_from_object("django.conf:settings", namespace="CELERY")
 
-# Auto-discover tasks in all installed apps and the tasks/ package.
-app.autodiscover_tasks(["tasks"])
+# Auto-discover tasks in all installed apps and ensure tasks package is imported.
+app.autodiscover_tasks()
+app.conf.imports = ("tasks.generation",)
+
